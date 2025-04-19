@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Sheet PDF</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h2 { text-align: center; margin-bottom: 0.5em; }
+        .meta { text-align: center; margin-bottom: 1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        tr.present td { background: #e0f7fa; color: #006064; font-weight: bold; }
+        tr.absent td { background: #ffebee; color: #b71c1c; font-weight: bold; }
+        .shift-title { background: #ececec; font-size: 1.1em; font-weight: bold; text-align: left; padding: 10px; }
+        .text-success { color: #28a745; }
+        .text-danger { color: #dc3545; }
+        .text-secondary { color: #6c757d; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar', { user: user }) %>
+    <h2>Attendance Sheet</h2>
+    <div class="meta">
+        <strong>Date:</strong> <%= date %>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Staff Name</th>
+                <th>Role</th>
+                <th>Morning Status</th>
+                <th>Evening Status</th>
+                <th>Total Salary</th>
+                <th>Withdrawn</th>
+                <th>Balance</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        <% staffList.forEach(staff => {
+            const mAtt = morningAttendance.find(a => a.staff && a.staff._id.toString() === staff._id.toString());
+            const mStatus = mAtt ? mAtt.status : 'Present';
+            const eAtt = eveningAttendance.find(a => a.staff && a.staff._id.toString() === staff._id.toString());
+            const eStatus = eAtt ? eAtt.status : 'Present';
+        %>
+            <tr>
+                <td><%= staff.name %></td>
+                <td><%= staff.role %></td>
+                <td class="<%= mStatus === 'Present' ? 'present' : 'absent' %>"><%= mStatus %></td>
+                <td class="<%= eStatus === 'Present' ? 'present' : 'absent' %>"><%= eStatus %></td>
+                <td><b>₹ <%= staffSalaryMap[staff._id.toString()] || 0 %></b></td>
+                <td><b>₹ <%= staffWithdrawnMap[staff._id.toString()] || 0 %></b></td>
+                <td class="<%= staffBalanceMap[staff._id.toString()] > 0 ? 'text-success' : (staffBalanceMap[staff._id.toString()] < 0 ? 'text-danger' : 'text-secondary') %>"><b>₹ <%= staffBalanceMap[staff._id.toString()] || 0 %></b></td>
+                <td>
+                    <% if (staffStatusMap[staff._id.toString()] === 'Advance') { %>
+                        <span style="background: #28a745; color: #fff; padding: 2px 8px; border-radius: 6px;">Advance</span>
+                    <% } else if (staffStatusMap[staff._id.toString()] === 'Negative') { %>
+                        <span style="background: #dc3545; color: #fff; padding: 2px 8px; border-radius: 6px;">Negative</span>
+                    <% } else { %>
+                        <span style="background: #6c757d; color: #fff; padding: 2px 8px; border-radius: 6px;">Settled</span>
+                    <% } %>
+                </td>
+            </tr>
+        <% }) %>
+        </tbody>
+    </table>
+</body>
+</html>

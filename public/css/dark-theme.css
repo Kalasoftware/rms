@@ -1,0 +1,15 @@
+body.dark-mode { background: #2b0a17 !important; color: #fbe4e8 !important; }
+.navbar, .table-dark, .bg-dark { background: #4b1321 !important; }
+.card, .modal-content, .table, .form-control, .form-select, .list-group-item, .card-body { background: #3a0f1a !important; color: #fbe4e8 !important; }
+.btn-primary, .btn-success, .btn-warning, .btn-info, .btn-secondary, .btn-dark { border: none; box-shadow: 0 2px 8px rgba(75,19,33,0.15); }
+.btn-primary { background: #a8324a !important; color: #fff !important; }
+.btn-success { background: #7d2333 !important; color: #fff !important; }
+.btn-danger { background: #d7263d !important; color: #fff !important; }
+.table-hover tbody tr:hover { background: #5e2333 !important; }
+input, textarea, select { background: #3a0f1a !important; color: #fbe4e8 !important; border: 1px solid #a8324a; }
+::-webkit-input-placeholder { color: #fbe4e8; }
+::-moz-placeholder { color: #fbe4e8; }
+:-ms-input-placeholder { color: #fbe4e8; }
+::placeholder { color: #fbe4e8; }
+.alert, .toast { background: #7d2333 !important; color: #fff !important; border: none; }
+.modal-header, .modal-footer { background: #4b1321 !important; color: #fff !important; }

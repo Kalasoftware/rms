@@ -1,0 +1,50 @@
+<%- include('../partials/navbar', { user: user }) %>
+<div class="modal fade" id="withdrawalsModal-<%= staff._id %>" tabindex="-1" aria-labelledby="withdrawalsModalLabel-<%= staff._id %>" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="withdrawalsModalLabel-<%= staff._id %>">Withdrawals for <%= staff.name %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="/withdraw/<%= staff._id %>" class="mb-3">
+          <div class="input-group">
+            <input type="number" name="amount" min="1" step="1" placeholder="Amount" class="form-control" required>
+            <input type="text" name="note" placeholder="Note (optional)" class="form-control">
+            <button type="submit" class="btn btn-warning">Add Withdraw</button>
+          </div>
+        </form>
+        <% if (withdrawals && withdrawals.length > 0) { %>
+        <table class="table table-sm table-bordered align-middle">
+          <thead><tr><th>Amount</th><th>Note</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>
+          <% withdrawals.forEach(w => { %>
+            <tr>
+              <td>
+                <form method="post" action="/withdraw/update/<%= w._id %>" class="d-inline">
+                  <input type="number" name="amount" value="<%= w.amount %>" class="form-control form-control-sm" min="1" required>
+              </td>
+              <td>
+                  <input type="text" name="note" value="<%= w.note %>" class="form-control form-control-sm">
+              </td>
+              <td>
+                  <%= w.date.toLocaleDateString() %>
+              </td>
+              <td style="white-space:nowrap">
+                  <button class="btn btn-sm btn-success" type="submit">Update</button>
+                </form>
+                <form method="post" action="/withdraw/delete/<%= w._id %>" style="display:inline">
+                  <button class="btn btn-sm btn-danger ms-1" type="submit" onclick="return confirm('Delete this withdrawal?')">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+        <% } else { %>
+          <div class="text-muted">No withdrawals for this month.</div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

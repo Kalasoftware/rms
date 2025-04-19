@@ -1,0 +1,78 @@
+/* Enhanced styles for modern UI features */
+
+/* Horizontally scrollable category carousel */
+#menu-category-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  gap: 0.5em;
+}
+.menu-category-tab {
+  flex: 0 0 auto;
+  margin-bottom: 0.5em;
+}
+
+/* Menu card with image */
+.menu-item-card {
+  position: relative;
+  min-width: 140px;
+  max-width: 180px;
+  transition: box-shadow 0.2s, background 0.2s, transform 0.15s;
+}
+.menu-item-card .menu-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.7em;
+  margin-bottom: 0.3em;
+  background: #eee;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.menu-item-card .menu-item-qty {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+}
+
+/* Floating cart summary for mobile */
+#floating-cart-summary {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  padding: 0.7em 1.2em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  font-size: 1.1em;
+  display: none;
+}
+@media (max-width: 576px) {
+  #floating-cart-summary { display: flex; }
+}
+
+/* Animate badge flying to cart */
+.fly-badge {
+  position: fixed !important;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(.4,2,.6,1), opacity 0.5s;
+  z-index: 2000;
+}
+
+/* Animate price changes */
+.price-animate {
+  animation: price-bounce 0.4s;
+}
+@keyframes price-bounce {
+  0% { color: #009688; transform: scale(1.2); }
+  100% { color: inherit; transform: scale(1); }
+}

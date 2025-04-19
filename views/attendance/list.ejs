@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/dark-theme.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .table-present td, .table-present select { background: #e0f7fa !important; color: #006064 !important; font-weight: bold; }
+        .table-absent td, .table-absent select { background: #ffebee !important; color: #b71c1c !important; font-weight: bold; }
+        .fw-bold { font-weight: bold; }
+        .shadow-sm { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .rounded { border-radius: 1rem; }
+        .align-middle td, .align-middle th { vertical-align: middle !important; }
+        .form-select option { font-weight: bold; }
+        .status-label { font-size: 1.1em; padding: 0.25em 0.75em; border-radius: 0.5em; display: inline-block; }
+        .status-present { background: #e0f7fa; color: #006064; border: 1px solid #4dd0e1; }
+        .status-absent { background: #ffebee; color: #b71c1c; border: 1px solid #e57373; }
+    </style>
+</head>
+<body>
+<%- include('../partials/navbar', { user: user }) %>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0"><i class="bi bi-people-fill me-2"></i>Staff Attendance</h2>
+        <div>
+            <a href="/staff/add" class="btn btn-success me-2"><i class="bi bi-person-plus"></i> Add Staff</a>
+            <a href="/attendance/pdf?date=<%= date %>&shift=<%= shift %>" class="btn btn-secondary"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
+        </div>
+    </div>
+    <form method="get" class="row g-2 mb-3 align-items-end">
+        <div class="col-auto">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" name="date" id="date" class="form-control" value="<%= date %>">
+        </div>
+        <div class="col-auto">
+            <label for="shift" class="form-label">Shift</label>
+            <select name="shift" id="shift" class="form-select" onchange="this.form.submit()">
+                <option value="Morning" <%= shift === 'Morning' ? 'selected' : '' %>>Morning Shift</option>
+                <option value="Evening" <%= shift === 'Evening' ? 'selected' : '' %>>Evening Shift</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> View</button>
+        </div>
+    </form>
+    <h4 class="mt-4 mb-3">Attendance Sheet (<%= shift %> Shift)</h4>
+    <div class="table-responsive rounded shadow-sm">
+        <table class="table table-bordered table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Staff Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                    <th>Withdraw</th>
+                    <th>Total Salary</th>
+                    <th>Withdrawn</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            <% staffList.forEach(staff => {
+                const att = attendance.find(a => a.staff && a.staff._id.toString() === staff._id.toString());
+                const status = att ? att.status : 'Present';
+            %>
+                <tr class="<%= status === 'Present' ? 'table-present' : 'table-absent' %>">
+                    <td><i class="bi bi-person-circle"></i> <%= staff.name %></td>
+                    <td><%= staff.role %></td>
+                    <td>
+                        <form method="post" action="/attendance/mark" class="d-inline">
+                            <input type="hidden" name="date" value="<%= date %>">
+                            <input type="hidden" name="shift" value="<%= shift %>">
+                            <input type="hidden" name="staffId" value="<%= staff._id %>" />
+                            <select name="status" class="form-select d-inline w-auto fw-bold <%= status === 'Present' ? 'text-primary' : 'text-danger' %>" onchange="this.form.submit()">
+                                <option value="Present" <%= status === 'Present' ? 'selected' : '' %>>Present</option>
+                                <option value="Absent" <%= status === 'Absent' ? 'selected' : '' %>>Absent</option>
+                            </select>
+                        </form>
+                        <span class="status-label <%= status === 'Present' ? 'status-present' : 'status-absent' %>"><%= status %></span>
+                    </td>
+                    <td>
+                        <form method="post" action="/staff/delete/<%= staff._id %>" style="display:inline;" onsubmit="return confirm('Delete this staff member?');">
+                            <button class="btn btn-danger btn-sm" type="submit"><i class="bi bi-trash"></i> Delete User</button>
+                        </form>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#withdrawalsModal-<%= staff._id %>">
+                            Withdrawals
+                        </button>
+                    </td>
+                    <td class="fw-bold text-success">₹ <%= staffSalaryMap[staff._id.toString()] || 0 %></td>
+                    <td class="fw-bold text-info">₹ <%= staffWithdrawnMap[staff._id.toString()] || 0 %></td>
+                    <td class="fw-bold <%= staffBalanceMap[staff._id.toString()] > 0 ? 'text-success' : (staffBalanceMap[staff._id.toString()] < 0 ? 'text-danger' : 'text-secondary') %>">₹ <%= staffBalanceMap[staff._id.toString()] || 0 %></td>
+                    <td>
+                        <% if (staffStatusMap[staff._id.toString()] === 'Advance') { %>
+                            <span class="badge bg-success">Advance</span>
+                        <% } else if (staffStatusMap[staff._id.toString()] === 'Negative') { %>
+                            <span class="badge bg-danger">Negative</span>
+                        <% } else { %>
+                            <span class="badge bg-secondary">Settled</span>
+                        <% } %>
+                    </td>
+                </tr>
+            <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<% staffList.forEach(staff => { %>
+    <% include('withdrawals_modal', { staff: staff, withdrawals: staffWithdrawalsList[staff._id.toString()] }) %>
+<% }) %>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

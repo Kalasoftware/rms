@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <%- include('../partials/navbar', { user: user }) %>
+    <div class="container mt-4">
+        <h2>Update Order</h2>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form method="POST" action="/orders/update/<%= order._id %>">
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                    <option value="preparing" <%= order.status === 'preparing' ? 'selected' : '' %>>Preparing</option>
+                    <option value="served" <%= order.status === 'served' ? 'selected' : '' %>>Served</option>
+                    <option value="paid" <%= order.status === 'paid' ? 'selected' : '' %>>Paid</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="table" class="form-label">Table</label>
+                <select id="table" name="table" class="form-select" onchange="toggleTableInput(this)">
+                  <option value="">Select Table</option>
+                  <% tables.forEach(function(tbl) { %>
+                    <option value="<%= tbl %>" <%= order.table === tbl ? 'selected' : '' %>><%= tbl %></option>
+                  <% }) %>
+                  <option value="__new">Add New Table...</option>
+                </select>
+                <input type="text" id="newTableInput" name="newTable" class="form-control mt-2" style="display:none;" placeholder="Enter new table number">
+            </div>
+            <script>
+              function toggleTableInput(sel) {
+                var input = document.getElementById('newTableInput');
+                if(sel.value === '__new') input.style.display = 'block';
+                else input.style.display = 'none';
+              }
+            </script>
+
+            <!-- Add Items Section -->
+            <div class="mb-3">
+              <label class="form-label">Order Items</label>
+              <div id="addItemsSection">
+                <% order.items.forEach(function(it, idx) { %>
+                  <div class="row mb-2 item-row">
+                    <div class="col">
+                      <select name="items[<%= idx %>][menuItem]" class="form-select">
+                        <option value="">Select Item</option>
+                        <% menu.forEach(function(item) { %>
+                          <option value="<%= item._id %>" <%= it.menuItem && (item._id.toString() === it.menuItem._id.toString()) ? 'selected' : '' %>><%= item.name %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div class="col">
+                      <input type="number" name="items[<%= idx %>][quantity]" class="form-control" placeholder="Qty" min="1" value="<%= it.quantity %>" required>
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                      <button type="button" class="btn btn-danger btn-sm remove-row">&times;</button>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+              <button type="button" class="btn btn-sm btn-secondary" id="addItemBtn">Add Another Item</button>
+            </div>
+            <script>
+              let itemIdx = <%= order.items.length %>;
+              var menuItems = '';
+              <% menu.forEach(function(item) { %>
+                menuItems += '<option value="<%= item._id %>"><%= item.name %></option>';
+              <% }) %>
+              document.getElementById('addItemBtn').onclick = function() {
+                var section = document.getElementById('addItemsSection');
+                var row = document.createElement('div');
+                row.className = 'row mb-2 item-row';
+                var select = '<select name="items[' + itemIdx + '][menuItem]" class="form-select"><option value="">Select Item</option>' + menuItems + '</select>';
+                row.innerHTML = "<div class='col'>" + select + "</div><div class='col'><input type='number' name='items["+itemIdx+"][quantity]' class='form-control' placeholder='Qty' min='1' value='1' required></div><div class='col-auto d-flex align-items-center'><button type='button' class='btn btn-danger btn-sm remove-row'>&times;</button></div>";
+                section.appendChild(row);
+                itemIdx++;
+              };
+              document.getElementById('addItemsSection').addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-row')) {
+                  e.target.closest('.item-row').remove();
+                }
+              });
+            </script>
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a href="/orders" class="btn btn-secondary">Back</a>
+        </form>
+        <div class="mt-4">
+            <h5>Order Items</h5>
+            <ul>
+                <% order.items.forEach(it => { %>
+                    <li><%= it.menuItem ? it.menuItem.name : '' %> x <%= it.quantity %></li>
+                <% }) %>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

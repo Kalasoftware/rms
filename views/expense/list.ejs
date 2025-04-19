@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+      body { background: #fff; }
+      .expenses-container {
+        max-width: 1000px;
+        margin: 2.5rem auto;
+      }
+      .expenses-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+      }
+      .expenses-title {
+        font-weight: 700;
+        font-size: 2rem;
+        color: #8B0A1A;
+        display: flex;
+        align-items: center;
+      }
+      .expenses-title i { font-size: 2.2rem; color: #8B0A1A; margin-right: 0.7rem; }
+      .btn-modern {
+        border-radius: 2rem;
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+        background: #8B0A1A;
+        border: none;
+        color: #fff;
+      }
+      .btn-modern:hover, .btn-modern:focus {
+        background: #660708;
+        color: #fff;
+      }
+      .btn-outline-primary {
+        color: #8B0A1A;
+        border-color: #8B0A1A;
+      }
+      .btn-outline-primary:hover {
+        background: #8B0A1A;
+        color: #fff;
+      }
+      .btn-danger {
+        border-radius: 1rem;
+      }
+      .expense-table th, .expense-table td {
+        vertical-align: middle;
+      }
+      .expense-table thead {
+        background: #8B0A1A;
+        color: #fff;
+      }
+      .expense-table tbody tr:hover {
+        background: #fbe4e7;
+      }
+      .category-list .list-group-item {
+        background: #fff0f3;
+        color: #8B0A1A;
+        border: 1px solid #f7c2cc;
+      }
+      .search-bar {
+        max-width: 300px;
+        border-radius: 2rem;
+        border: 1px solid #8B0A1A;
+      }
+      .alert {
+        border-radius: 1rem;
+        font-size: 1rem;
+        text-align: center;
+      }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar', { user: user }) %>
+    <div class="expenses-container">
+        <div class="expenses-header">
+            <div class="expenses-title"><i class="bi bi-wallet2"></i> Expenses</div>
+            <div>
+              <input type="text" id="searchInput" class="form-control search-bar d-inline-block me-3" placeholder="Search by amount, description, category...">
+            </div>
+        </div>
+        <% if (typeof message !== 'undefined' && message) { %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <%= message %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+        <form action="/expenses/add" method="POST" class="row g-3 mb-4 needs-validation" novalidate autocomplete="off">
+            <div class="col-md-2">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-currency-rupee"></i></span>
+                  <input type="number" class="form-control" name="amount" placeholder="Amount" required min="0" step="0.01">
+                </div>
+                <div class="invalid-feedback">Please enter a valid amount.</div>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="description" placeholder="Description" required maxlength="100">
+                <div class="invalid-feedback">Please enter a description.</div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-tags"></i></span>
+                  <select name="category" class="form-select" required>
+                      <option value="" disabled selected>Select category</option>
+                      <% categories.forEach(cat => { %>
+                          <option value="<%= cat._id %>"><%= cat.name %></option>
+                      <% }) %>
+                  </select>
+                </div>
+                <div class="invalid-feedback">Please select a category.</div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-modern w-100"><i class="bi bi-plus-circle"></i> Add</button>
+            </div>
+        </form>
+        <form action="/expenses/category/add" method="POST" class="row g-3 mb-4">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="name" placeholder="New Category" required maxlength="30">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100 btn-modern"><i class="bi bi-plus-lg"></i> Add Category</button>
+            </div>
+        </form>
+        <h5 class="mt-4" style="color:#8B0A1A;">Categories</h5>
+        <ul class="list-group mb-4 category-list">
+            <% categories.forEach(cat => { %>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-tag"></i> <%= cat.name %></span>
+                    <form action="/expenses/category/delete/<%= cat._id %>" method="POST" onsubmit="return confirm('Delete this category?');">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                    </form>
+                </li>
+            <% }) %>
+        </ul>
+        <h5 class="mt-4" style="color:#8B0A1A;">Expense Records</h5>
+        <div class="table-responsive">
+        <table class="table table-bordered table-hover expense-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="expenseTableBody">
+                <% expenses.forEach(exp => { %>
+                    <tr>
+                        <td><%= exp.date ? exp.date.toLocaleString() : '-' %></td>
+                        <td>₹<%= exp.amount.toFixed(2) %></td>
+                        <td><%= exp.description %></td>
+                        <td><%= exp.category ? exp.category.name : '-' %></td>
+                        <td>
+                            <form action="/expenses/delete/<%= exp._id %>" method="POST" onsubmit="return confirm('Delete this expense?');">
+                                <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+        <a href="/dashboard" class="btn btn-modern mt-2"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+    </div>
+    <script>
+      // Modern client-side validation
+      (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+          }, false);
+        });
+      })();
+      // Search/filter expenses table (by amount, description, or category)
+      document.getElementById('searchInput').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#expenseTableBody tr');
+        rows.forEach(row => {
+          const tds = row.querySelectorAll('td');
+          let match = false;
+          tds.forEach(td => {
+            if (td.innerText.toLowerCase().includes(filter)) {
+              match = true;
+            }
+          });
+          row.style.display = match ? '' : 'none';
+        });
+      });
+    </script>
+</body>
+</html>

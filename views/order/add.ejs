@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .menu-item-card {
+            display: inline-block;
+            margin: 0.5em;
+            padding: 1em 1em 0.5em 1em;
+            border-radius: 1em;
+            background: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            cursor: pointer;
+            min-width: 140px;
+            max-width: 180px;
+            text-align: center;
+            transition: box-shadow 0.2s, background 0.2s;
+            border: 2px solid transparent;
+        }
+        .menu-item-card.selected,
+        .menu-item-card:hover {
+            background: #e0f7fa;
+            border: 2px solid #00bcd4;
+            box-shadow: 0 4px 16px rgba(0,188,212,0.15);
+        }
+        .menu-item-card .menu-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .menu-item-card .menu-price {
+            color: #009688;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        .menu-item-card .menu-add-btn {
+            margin-top: 0.5em;
+            width: 100%;
+        }
+        .selected-items-table td {
+            vertical-align: middle;
+        }
+        .remove-item-btn { margin-left: 0.3em; }
+        @media (max-width: 576px) {
+            .col-8, .col-3, .col-1 { flex: 0 0 100%; max-width: 100%; }
+            #items-container .row { flex-direction: column; }
+            .remove-item-btn { margin-top: 0.5em; }
+        }
+        .menu-category-tab {
+            display: inline-block;
+            margin: 0 0.5em 1em 0;
+            padding: 0.5em 1.2em;
+            border-radius: 2em;
+            background: #ececec;
+            font-weight: 500;
+            color: #00796b;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: background 0.2s, color 0.2s, border 0.2s;
+        }
+        .menu-category-tab.active,
+        .menu-category-tab:hover {
+            background: #e0f7fa;
+            color: #004d40;
+            border: 2px solid #00bcd4;
+        }
+        .menu-category-tab i { margin-right: 0.4em; }
+        #menu-category-tabs {
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .menu-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 0.7em;
+            margin: 0 auto 0.3em auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: white;
+            cursor: pointer;
+        }
+        #floating-cart-summary {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            padding: 0.5em;
+            border-top: 1px solid #ddd;
+            display: none;
+        }
+        @media (max-width: 576px) {
+            #floating-cart-summary {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar', { user: user }) %>
+    <div class="container mt-4">
+        <h2>Add Order</h2>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form method="POST" action="/orders/add">
+            <div class="mb-3">
+                <label for="table" class="form-label">Table</label>
+                <select id="table" name="table" class="form-select" onchange="toggleTableInput(this)">
+                  <option value="">Select Table</option>
+                  <% tables.forEach(function(tbl) { %>
+                    <option value="<%= tbl %>"><%= tbl %></option>
+                  <% }) %>
+                  <option value="__new">Add New Table...</option>
+                </select>
+                <input type="text" id="newTableInput" name="newTable" class="form-control mt-2" style="display:none;" placeholder="Enter new table number">
+            </div>
+            <div class="mb-3">
+                <label for="type" class="form-label">Type</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="dine-in">Dine-in</option>
+                    <option value="takeaway">Takeaway</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Select Items</label>
+                <div id="menu-category-tabs" class="mb-2">
+                    <span class="menu-category-tab active" data-category="all"><i class="bi bi-grid"></i> All</span>
+                    <% let categories = Array.from(new Set(menu.map(item => item.category || 'Other'))); %>
+                    <% categories.forEach(function(cat) { %>
+                        <span class="menu-category-tab" data-category="<%= cat %>">
+                            <% if (cat.toLowerCase().includes('drink')) { %>
+                                <i class="bi bi-cup-straw"></i>
+                            <% } else if (cat.toLowerCase().includes('dessert')) { %>
+                                <i class="bi bi-cupcake"></i>
+                            <% } else { %>
+                                <i class="bi bi-egg-fried"></i>
+                            <% } %>
+                            <%= cat %>
+                        </span>
+                    <% }) %>
+                </div>
+                <div class="d-flex flex-wrap mb-2" id="menu-items-list">
+                    <% function getRandomColor(idx) {
+                        const colors = [
+                            '#FFB300', '#FF7043', '#29B6F6', '#66BB6A', '#AB47BC',
+                            '#FFA726', '#EC407A', '#26A69A', '#8D6E63', '#789262',
+                            '#7E57C2', '#FFCA28', '#26C6DA', '#D4E157', '#FF8A65'
+                        ];
+                        return colors[idx % colors.length];
+                    } %>
+                    <% menu.forEach((item, idx) => { %>
+                        <div class="menu-item-card" data-id="<%= item._id %>" data-name="<%= item.name %>" data-price="<%= item.price %>" data-category="<%= item.category %>" tabindex="0">
+                            <div class="menu-img" style="background:<%= getRandomColor(idx) %>;"></div>
+                            <div class="menu-name"><%= item.name %></div>
+                            <div class="menu-price">₹<%= item.price %></div>
+                            <button type="button" class="btn btn-info btn-sm menu-add-btn"><i class="bi bi-plus-circle"></i> Add</button>
+                            <span class="badge bg-primary menu-item-qty" style="display:none;margin-top:5px;"></span>
+                        </div>
+                    <% }) %>
+                </div>
+                <div class="mt-2">
+                    <table class="table table-bordered table-striped selected-items-table" id="selected-items-table" style="display:none;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="customItem" class="form-label">Custom Item (if any)</label>
+                <input type="text" class="form-control" name="customItem" id="customItem" placeholder="Enter custom item name">
+            </div>
+            <div class="mb-3">
+                <label for="customPrice" class="form-label">Custom Price (if any)</label>
+                <input type="number" class="form-control" name="customPrice" id="customPrice" placeholder="Enter custom item price">
+            </div>
+            <input type="hidden" name="itemsData" id="itemsData">
+            <button type="submit" class="btn btn-success">Create Order</button>
+            <a href="/orders" class="btn btn-secondary">Back</a>
+        </form>
+    </div>
+    <div id="floating-cart-summary">
+        <span><i class="bi bi-cart"></i> <span class="cart-badge badge bg-success">0</span></span>
+        <span class="cart-total">₹0</span>
+        <a href="#selected-items-table" class="btn btn-primary btn-sm">View Cart</a>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.js"></script>
+    <script src="/js/order_add_enhanced.js"></script>
+    <script>
+        // --- Modern Interactive Menu Selection ---
+        const menuItemsList = document.getElementById('menu-items-list');
+        const selectedTable = document.getElementById('selected-items-table');
+        const selectedTbody = selectedTable.querySelector('tbody');
+        let selectedItems = [];
+        // Pre-select table if provided in URL
+        (function preselectTableFromURL() {
+          const params = new URLSearchParams(window.location.search);
+          const table = params.get('table');
+          if (table) {
+            const tableSelect = document.getElementById('table');
+            for (let opt of tableSelect.options) {
+              if (opt.value == table) {
+                tableSelect.value = table;
+                toggleTableInput(tableSelect);
+                break;
+              }
+            }
+          }
+        })();
+        function renderSelectedItems() {
+            selectedTbody.innerHTML = '';
+            let showTable = false;
+            selectedItems.forEach((item, idx) => {
+                showTable = true;
+                selectedTbody.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>₹${item.price}</td>
+                        <td><input type="number" min="1" value="${item.quantity}" class="form-control form-control-sm" onchange="updateQuantity(${idx}, this.value)"></td>
+                        <td>₹${item.price * item.quantity}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeSelectedItem(${idx})"><i class="bi bi-x-lg"></i></button></td>
+                    </tr>
+                `;
+            });
+            selectedTable.style.display = showTable ? '' : 'none';
+            document.getElementById('itemsData').value = JSON.stringify(selectedItems);
+            // Update badges on menu cards
+            selectedItems.forEach(item => updateMenuCardQuantity(item.id));
+            updateCartSummary();
+        }
+        function updateQuantity(idx, val) {
+            selectedItems[idx].quantity = parseInt(val) || 1;
+            renderSelectedItems();
+        }
+        function removeSelectedItem(idx) {
+            selectedItems.splice(idx, 1);
+            renderSelectedItems();
+        }
+        function updateMenuCardQuantity(id) {
+            selectedItems.forEach(item => {
+                const card = document.querySelector(`.menu-item-card[data-id='${item.id}']`);
+                if (card) {
+                    const qtyBadge = card.querySelector('.menu-item-qty');
+                    if (item.quantity > 0) {
+                        qtyBadge.textContent = item.quantity;
+                        qtyBadge.style.display = 'inline-block';
+                    } else {
+                        qtyBadge.style.display = 'none';
+                    }
+                }
+            });
+        }
+        function updateCartSummary() {
+            const cartBadge = document.querySelector('#floating-cart-summary .cart-badge');
+            const cartTotal = document.querySelector('#floating-cart-summary .cart-total');
+            const total = selectedItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+            cartBadge.textContent = selectedItems.length;
+            cartTotal.textContent = `₹${total}`;
+        }
+        menuItemsList.addEventListener('click', function(e) {
+            const card = e.target.closest('.menu-item-card');
+            if (!card) return;
+            // Add if click is on Add button or on the image
+            if (
+                e.target.classList.contains('menu-add-btn') ||
+                e.target.closest('.menu-add-btn') ||
+                e.target.classList.contains('menu-img')
+            ) {
+                const id = card.getAttribute('data-id');
+                const name = card.getAttribute('data-name');
+                const price = parseFloat(card.getAttribute('data-price'));
+                let found = selectedItems.find(item => item.id === id);
+                if (found) {
+                    found.quantity++;
+                } else {
+                    selectedItems.push({ id, name, price, quantity: 1 });
+                }
+                renderSelectedItems();
+                updateMenuCardQuantity(id);
+            }
+        });
+        // --- Category Tabs Functionality ---
+        const tabs = document.querySelectorAll('.menu-category-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                const cat = this.getAttribute('data-category');
+                document.querySelectorAll('.menu-item-card').forEach(card => {
+                    if (cat === 'all' || (card.getAttribute('data-category') || 'Other') === cat) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+        function toggleTableInput(sel) {
+          var input = document.getElementById('newTableInput');
+          if(sel.value === '__new') input.style.display = 'block';
+          else input.style.display = 'none';
+        }
+        // On submit, pass selectedItems as JSON
+        document.querySelector('form').addEventListener('submit', function(e) {
+            document.getElementById('itemsData').value = JSON.stringify(selectedItems);
+        });
+    </script>
+</body>
+</html>
